@@ -1,0 +1,9 @@
+{
+    "ignore": ["node_modules"],
+    "watch": ["src", ".env"],
+    "exec": "bun tsc && bun lint && bun start",
+    "ext": "ts",
+    "env": {
+        "NODE_ENV": "development"
+    }
+}
