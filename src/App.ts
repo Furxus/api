@@ -2,6 +2,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { createServer, Server as HttpServer } from "http";
+
+import { Server as SocketServer } from "socket.io";
+
 import Database from "./structures/Database";
 import logger from "./structures/Logger";
 import authMiddleware from "./middlewares/auth.middleware";
@@ -12,11 +15,13 @@ const port = process.env.PORT || 4000;
 export class App {
     readonly app: express.Application;
     readonly http: HttpServer;
+    readonly io: SocketServer;
     readonly database: Database;
 
     constructor(controllers: any[]) {
         this.app = express();
         this.http = createServer(this.app);
+        this.io = new SocketServer(this.http);
         this.database = new Database();
 
         this.app.use(cors());
