@@ -179,8 +179,27 @@ const userSchema = new Schema(
     {
         methods: {
             generateToken: function () {
-                const { password: _p, _id: _d, ...user } = this.toObject();
-                return jwt.sign(user, JWT_SECRET!);
+                return jwt.sign(this.toJSON(), JWT_SECRET!);
+            }
+        },
+        virtuals: {
+            id: {
+                get: function () {
+                    return this._id;
+                },
+                set: function (v: string) {
+                    this._id = v;
+                }
+            }
+        },
+        toJSON: {
+            virtuals: true,
+            transform: function (_, ret) {
+                delete ret._id;
+                delete ret.__v;
+                delete ret.password;
+                delete ret.privateKey;
+                return ret;
             }
         }
     }

@@ -1,4 +1,7 @@
 import axios from "axios";
+import ColorThief from "@yaredfall/color-thief-ts";
+import { Snowflake } from "@theinternetfolks/snowflake";
+import { threadId } from "worker_threads";
 
 export const extractUrls = (content: string) => {
     const regex =
@@ -18,3 +21,8 @@ export const imageToBuffer = async (url: string) =>
             responseType: "arraybuffer"
         })
     ).data;
+
+export const colorThief = new ColorThief();
+
+export const genSnowflake = () =>
+    Snowflake.generate({ timestamp: 1731283200, shard_id: threadId });
