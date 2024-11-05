@@ -238,7 +238,7 @@ export class AuthController {
             });
 
             if (!userCreds)
-                throw new HttpException(400, "User not found", [
+                throw new HttpException(400, "Invalid username or password", [
                     {
                         type: "password",
                         message: "Invalid username or password"
@@ -254,10 +254,10 @@ export class AuthController {
             });
 
             if (passwordError)
-                throw new HttpException(400, "Invalid password", [
+                throw new HttpException(400, "Invalid username or password", [
                     {
                         type: "password",
-                        message: "Invalid password"
+                        message: "Invalid username or password"
                     }
                 ]);
 
@@ -270,10 +270,10 @@ export class AuthController {
             );
 
             if (!pass)
-                throw new HttpException(400, "Invalid password", [
+                throw new HttpException(400, "Invalid username or password", [
                     {
                         type: "password",
-                        message: "Invalid password"
+                        message: "Invalid username or password"
                     }
                 ]);
 
@@ -292,8 +292,8 @@ export class AuthController {
             await user.save();
 
             res.json({
-                success: true,
-                token: encrypt(user.generateToken())
+                token: encrypt(user.generateToken()),
+                ...user.toJSON()
             });
         } catch (err) {
             logger.error(err);

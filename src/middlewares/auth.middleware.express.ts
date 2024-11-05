@@ -11,7 +11,7 @@ if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
 const authMiddleware = (req: Request, _: Response, next: NextFunction) => {
     try {
-        if (req.path.includes("/auth")) return next();
+        if (!req.headers.authorization) return next();
         const token = req.headers.authorization?.split(" ")[1] ?? null;
         if (!token) throw new HttpException(401, "Unauthorized");
         const user = jwt.verify(decrypt(token), JWT_SECRET) as UserWithEmail;

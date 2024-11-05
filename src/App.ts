@@ -1,48 +1,71 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { createServer, Server as HttpServer } from "http";
+import { createServer } from "http";
 
-import { Server as SocketServer } from "socket.io";
+import { Socket, Server as SocketServer } from "socket.io";
 
 import Database from "./structures/Database";
 import logger from "./structures/Logger";
-import authMiddleware from "./middlewares/auth.middleware";
+
+import authMiddlewareExpress from "./middlewares/auth.middleware.express";
+import authMiddlewareIO from "./middlewares/auth.middleware.io";
+
 import errorMiddleware from "./middlewares/error.middleware";
+import { MainController } from "./controllers/index.controller";
+import { AuthController } from "./controllers/auth.controller";
+import { MeController } from "./controllers/me.controller";
+import { instrument } from "@socket.io/admin-ui";
+import userModel from "./models/User";
+import type { UserWithEmail } from "@furxus/types";
 
 const port = process.env.PORT || 4000;
 
-export class App {
-    readonly app: express.Application;
-    readonly http: HttpServer;
-    readonly io: SocketServer;
-    readonly database: Database;
+const app = express();
+const http = createServer(app);
+const database = new Database();
 
-    constructor(controllers: any[]) {
-        this.app = express();
-        this.http = createServer(this.app);
-        this.io = new SocketServer(this.http);
-        this.database = new Database();
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-        this.app.use(cors());
-        this.app.use(bodyParser.json());
-        this.app.use(bodyParser.urlencoded({ extended: true }));
+const controllers = [
+    new MainController(),
+    new AuthController(),
+    new MeController()
+];
 
-        this.app.use(authMiddleware);
-        this.initControllers(controllers);
-        this.app.use(errorMiddleware);
-    }
-
-    private initControllers(controllers: any[]) {
-        for (const controller of controllers) {
-            this.app.use("/v2", controller.router);
-        }
-    }
-
-    async start() {
-        await this.database.connect();
-        this.http.listen(port, () =>
-            logger.info(`Server is running on ${port}`)
-        );
-    }
+app.use(authMiddlewareExpress);
+for (const controller of controllers) {
+    app.use("/v2", controller.router);
 }
+app.use(errorMiddleware);
+
+const io = new SocketServer(http, {
+    path: "/v2/socket-io",
+    connectionStateRecovery: {},
+    cors: {
+        origin: ["http://localhost:1420", "https://admin.socket.io"]
+    }
+});
+
+io.use(authMiddlewareIO as any);
+
+io.on("connection", (socket) => {
+    logger.debug(`Socket connected: ${socket.id}`);
+
+    socket.to(socket.id).emit("me", (socket as any).user);
+});
+
+instrument(io, {
+    auth: false,
+    mode: "development"
+});
+
+await database.connect();
+http.listen(port, () => {
+    logger.info(`Server is running on ${port}`);
+    logger.info(`Socket is running on ${port}`);
+});
+
+export { http, database, app, io };

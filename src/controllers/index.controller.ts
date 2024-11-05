@@ -1,14 +1,13 @@
 import { Router, type Request, type Response } from "express";
 
 export class MainController {
-    path = "/";
     router = Router();
 
     constructor() {
-        this.router.get(`${this.path}/ack`, this.getAck as any);
+        this.router.get("/ack", this.getAck);
     }
 
     async getAck(_: Request, res: Response) {
-        res.json({ ack: true });
+        res.status(200).json({ ack: true });
     }
 }

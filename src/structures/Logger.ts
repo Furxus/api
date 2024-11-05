@@ -1,6 +1,6 @@
 import { createLogger, format, transports, config } from "winston";
 import "winston-daily-rotate-file";
-import { capitalize } from "lodash";
+import capitalize from "lodash/capitalize";
 import moment from "moment";
 
 const { combine, timestamp, printf, errors } = format;
