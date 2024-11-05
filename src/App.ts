@@ -3,7 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { createServer } from "http";
 
-import { Socket, Server as SocketServer } from "socket.io";
+import { Server as SocketServer } from "socket.io";
 
 import Database from "./structures/Database";
 import logger from "./structures/Logger";
@@ -16,8 +16,9 @@ import { MainController } from "./controllers/index.controller";
 import { AuthController } from "./controllers/auth.controller";
 import { MeController } from "./controllers/me.controller";
 import { instrument } from "@socket.io/admin-ui";
-import userModel from "./models/User";
-import type { UserWithEmail } from "@furxus/types";
+
+import Mailgun from "mailgun.js";
+import formData from "form-data";
 
 const port = process.env.PORT || 4000;
 
@@ -62,10 +63,15 @@ instrument(io, {
     mode: "development"
 });
 
+const mgInstance = new Mailgun(formData);
+const mailgun = mgInstance.client({
+    key: process.env.MAILGUN_KEY ?? "",
+    username: "api"
+});
 await database.connect();
 http.listen(port, () => {
     logger.info(`Server is running on ${port}`);
     logger.info(`Socket is running on ${port}`);
 });
 
-export { http, database, app, io };
+export { http, database, app, io, mailgun };

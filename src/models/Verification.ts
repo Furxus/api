@@ -9,6 +9,7 @@ const verificationSchema = new Schema({
     },
     user: {
         type: String,
+        ref: "users",
         required: true
     },
     code: {
@@ -31,13 +32,13 @@ const verificationSchema = new Schema({
 
 export type Verification = InferSchemaType<typeof verificationSchema>;
 
-const VerificationSchema = model<Verification>(
+const verificationModel = model<Verification>(
     "verifications",
     verificationSchema
 );
 
 export type VerificationDocument = ReturnType<
-    (typeof VerificationSchema)["hydrate"]
+    (typeof verificationModel)["hydrate"]
 >;
 
-export default VerificationSchema;
+export default verificationModel;

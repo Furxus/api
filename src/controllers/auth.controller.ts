@@ -17,6 +17,9 @@ import { decrypt, encrypt } from "../structures/Crypt";
 
 import bucket from "../structures/AssetManagement";
 import { colorThief, genRandColor, genSnowflake } from "../structures/Util";
+import verificationModel from "../models/Verification";
+import { mailgun } from "../App";
+import type { RequestWithUser } from "@furxus/types";
 
 const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 
@@ -38,6 +41,8 @@ export class AuthController {
     constructor() {
         this.router.post(`${this.path}/register`, this.register);
         this.router.post(`${this.path}/login`, this.login);
+        this.router.post(`${this.path}/verify`, this.verify);
+        this.router.post(`${this.path}/resend-email`, this.resendEmail as any);
     }
 
     async register(req: Request, res: Response, next: NextFunction) {
@@ -191,7 +196,33 @@ export class AuthController {
                 createdTimestamp: Date.now()
             });
 
+            const code = crypto.randomBytes(6).toString("hex");
+
+            // Create verification document
+
+            // Create a verification document
+            const verification = new verificationModel({
+                _id: genSnowflake(),
+                user: user.id,
+                code,
+                expiresAt: moment().add(1, "day").toDate(),
+                expiresTimestamp: moment().add(1, "day").unix()
+            });
+
+            const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verification.code}`;
+
+            await mailgun.messages.create("furxus.com", {
+                from: "verify@furxus.com",
+                to: user.email,
+                subject: "Furxus - Verify your email",
+                template: "email verification template",
+                "h:X-Mailgun-Variables": JSON.stringify({
+                    verification_url: verificationUrl
+                })
+            });
+
             await user.save();
+            await verification.save();
 
             res.status(201).json({
                 success: true
@@ -294,6 +325,142 @@ export class AuthController {
             res.json({
                 token: encrypt(user.generateToken()),
                 ...user.toJSON()
+            });
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async verify(req: Request, res: Response, next: NextFunction) {
+        // Find the verification document in the database
+        try {
+            const { code } = req.body;
+
+            const verification = await verificationModel
+                .findOne({
+                    code
+                })
+                .populate("user");
+
+            console.log(verification);
+
+            if (!verification)
+                throw new HttpException(400, "Invalid verification code", [
+                    {
+                        type: "code",
+                        message: "Invalid verification code"
+                    }
+                ]);
+
+            // Find the user in the database
+            const user = await userModel.findById(verification.user);
+
+            if (!user)
+                throw new HttpException(400, "Invalid verification code", [
+                    {
+                        type: "code",
+                        message: "Invalid verification code"
+                    }
+                ]);
+
+            // Check if the verification has expired
+            if (moment().isAfter(verification.expiresAt)) {
+                await verification.deleteOne();
+
+                const code = crypto.randomBytes(6).toString("hex");
+                const newVerification = new verificationModel({
+                    _id: genSnowflake(),
+                    user: user.id,
+                    code,
+                    expiresAt: moment().add(1, "day").toDate(),
+                    expiresTimestamp: moment().add(1, "day").unix()
+                });
+
+                const verificationUrl = `${process.env.FRONTEND_URL}/verify/${newVerification.code}`;
+
+                await mailgun.messages.create("furxus.com", {
+                    from: "verify@furxus.com",
+                    to: user.email,
+                    subject: "Furxus - Verify your email",
+                    template: "email verification template",
+                    "h:X-Mailgun-Variables": JSON.stringify({
+                        verification_url: verificationUrl
+                    })
+                });
+
+                await newVerification.save();
+
+                throw new HttpException(400, "Verification code has expired", [
+                    {
+                        type: "code",
+                        message: "Verification code has expired"
+                    }
+                ]);
+            }
+
+            // Verify the user
+            user.verified = true;
+            await user.save();
+            await verification.deleteOne();
+
+            res.json({
+                success: true
+            });
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async resendEmail(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            const { user } = req;
+
+            // Delete the old verification document (if it exists)
+            const dbUser = await userModel.findById(user.id);
+
+            if (!dbUser)
+                throw new HttpException(400, "Email not found", [
+                    {
+                        type: "email",
+                        message: "Email not found"
+                    }
+                ]);
+
+            await verificationModel.deleteOne({
+                user: user.id
+            });
+
+            // END: Delete the old verification document
+
+            // Create a new verification document
+            const code = crypto.randomBytes(6).toString("hex");
+
+            const verification = new verificationModel({
+                _id: genSnowflake(),
+                user: user.id,
+                code,
+                expiresAt: moment().add(1, "day").toDate(),
+                expiresTimestamp: moment().add(1, "day").unix()
+            });
+
+            const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verification.code}`;
+
+            await mailgun.messages.create("furxus.com", {
+                from: "verify@furxus.com",
+                to: dbUser.email,
+                subject: "Furxus - Verify your email",
+                template: "email verification template",
+                "h:X-Mailgun-Variables": JSON.stringify({
+                    verification_url: verificationUrl
+                })
+            });
+
+            await verification.save();
+
+            res.json({
+                success: true
             });
         } catch (err) {
             logger.error(err);
