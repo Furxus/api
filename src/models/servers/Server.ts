@@ -25,7 +25,7 @@ const serverSchema = new Schema(
         },
         owner: {
             type: String,
-            ref: "members",
+            ref: "users",
             required: true
         },
         invites: [
@@ -119,6 +119,24 @@ const serverSchema = new Schema(
                 });
 
                 return code;
+            }
+        },
+        virtuals: {
+            id: {
+                get: function () {
+                    return this._id;
+                },
+                set: function (v: string) {
+                    this._id = v;
+                }
+            }
+        },
+        toJSON: {
+            virtuals: true,
+            transform: function (_, ret) {
+                delete ret._id;
+                delete ret.__v;
+                return ret;
             }
         }
     }

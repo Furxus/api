@@ -16,6 +16,10 @@ export class MeController {
     }
 
     async getMeServers(req: RequestWithUser, res: Response) {
-        res.json(await serverModel.find({ owner: req.user.id }));
+        res.json(
+            await serverModel.find({
+                $or: [{ owner: req.user.id }, { members: req.user.id }]
+            })
+        );
     }
 }

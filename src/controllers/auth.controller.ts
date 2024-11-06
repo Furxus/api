@@ -20,6 +20,7 @@ import { colorThief, genRandColor, genSnowflake } from "../structures/Util";
 import verificationModel from "../models/Verification";
 import { mailgun } from "../App";
 import type { RequestWithUser } from "@furxus/types";
+import { HTTP_RESPONSE_CODE } from "../Constants";
 
 const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 
@@ -55,16 +56,21 @@ export class AuthController {
                 "MM/DD/YYYY"
             );
             if (!dateOfBirth.isValid())
-                throw new HttpException(400, "Invalid date of birth", [
-                    {
-                        type: "dateOfBirth",
-                        message: "Make sure the date is in MM/DD/YYYY format"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid date of birth",
+                    [
+                        {
+                            type: "dateOfBirth",
+                            message:
+                                "Make sure the date is in MM/DD/YYYY format"
+                        }
+                    ]
+                );
 
             if (moment().diff(dateOfBirth, "years") < 13)
                 throw new HttpException(
-                    400,
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
                     "You must be at least 13 years old",
                     [
                         {
@@ -101,7 +107,11 @@ export class AuthController {
                 );
 
             if (errors.length > 0)
-                throw new HttpException(400, "Invalid fields", errors);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid fields",
+                    errors
+                );
 
             // Grab validated values
 
@@ -110,7 +120,7 @@ export class AuthController {
 
             if (username === email)
                 throw new HttpException(
-                    400,
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
                     "Username and email cannot be the same",
                     [
                         {
@@ -130,33 +140,45 @@ export class AuthController {
 
             if (userExists) {
                 if (userExists.username === username)
-                    throw new HttpException(400, "Username is taken", [
-                        {
-                            type: "username",
-                            message: "Username is taken"
-                        }
-                    ]);
+                    throw new HttpException(
+                        HTTP_RESPONSE_CODE.BAD_REQUEST,
+                        "Username is taken",
+                        [
+                            {
+                                type: "username",
+                                message: "Username is taken"
+                            }
+                        ]
+                    );
 
                 if (userExists.email === email)
-                    throw new HttpException(400, "Email is taken", [
-                        {
-                            type: "email",
-                            message: "Email is taken"
-                        }
-                    ]);
+                    throw new HttpException(
+                        HTTP_RESPONSE_CODE.BAD_REQUEST,
+                        "Email is taken",
+                        [
+                            {
+                                type: "email",
+                                message: "Email is taken"
+                            }
+                        ]
+                    );
             }
 
             if (password !== confirmPassword)
-                throw new HttpException(400, "Passwords do not match", [
-                    {
-                        type: "password",
-                        message: "Passwords do not match"
-                    },
-                    {
-                        type: "confirmPassword",
-                        message: "Passwords do not match"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Passwords do not match",
+                    [
+                        {
+                            type: "password",
+                            message: "Passwords do not match"
+                        },
+                        {
+                            type: "confirmPassword",
+                            message: "Passwords do not match"
+                        }
+                    ]
+                );
 
             // Generate salt for the user's password
             const salt = bcrypt.genSaltSync(11);
@@ -256,7 +278,7 @@ export class AuthController {
 
             if (error)
                 throw new HttpException(
-                    400,
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
                     "Invalid fields",
                     error.details.map((err) => ({
                         type: err.path[0],
@@ -269,12 +291,16 @@ export class AuthController {
             });
 
             if (!userCreds)
-                throw new HttpException(400, "Invalid username or password", [
-                    {
-                        type: "password",
-                        message: "Invalid username or password"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid username or password",
+                    [
+                        {
+                            type: "password",
+                            message: "Invalid username or password"
+                        }
+                    ]
+                );
 
             // revalidate the password
             const {
@@ -285,12 +311,16 @@ export class AuthController {
             });
 
             if (passwordError)
-                throw new HttpException(400, "Invalid username or password", [
-                    {
-                        type: "password",
-                        message: "Invalid username or password"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid username or password",
+                    [
+                        {
+                            type: "password",
+                            message: "Invalid username or password"
+                        }
+                    ]
+                );
 
             // Decrypt the password
             const decrypted = decrypt(userCreds.password);
@@ -301,24 +331,32 @@ export class AuthController {
             );
 
             if (!pass)
-                throw new HttpException(400, "Invalid username or password", [
-                    {
-                        type: "password",
-                        message: "Invalid username or password"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid username or password",
+                    [
+                        {
+                            type: "password",
+                            message: "Invalid username or password"
+                        }
+                    ]
+                );
 
             const user = await userModel.findOne({
                 $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }]
             });
 
             if (!user)
-                throw new HttpException(400, "Invalid username or password", [
-                    {
-                        type: "password",
-                        message: "Invalid username or password"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid username or password",
+                    [
+                        {
+                            type: "password",
+                            message: "Invalid username or password"
+                        }
+                    ]
+                );
 
             await user.save();
 
@@ -337,32 +375,36 @@ export class AuthController {
         try {
             const { code } = req.body;
 
-            const verification = await verificationModel
-                .findOne({
-                    code
-                })
-                .populate("user");
-
-            console.log(verification);
+            const verification = await verificationModel.findOne({
+                code
+            });
 
             if (!verification)
-                throw new HttpException(400, "Invalid verification code", [
-                    {
-                        type: "code",
-                        message: "Invalid verification code"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid verification code",
+                    [
+                        {
+                            type: "code",
+                            message: "Invalid verification code"
+                        }
+                    ]
+                );
 
             // Find the user in the database
             const user = await userModel.findById(verification.user);
 
             if (!user)
-                throw new HttpException(400, "Invalid verification code", [
-                    {
-                        type: "code",
-                        message: "Invalid verification code"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invalid verification code",
+                    [
+                        {
+                            type: "code",
+                            message: "Invalid verification code"
+                        }
+                    ]
+                );
 
             // Check if the verification has expired
             if (moment().isAfter(verification.expiresAt)) {
@@ -391,12 +433,16 @@ export class AuthController {
 
                 await newVerification.save();
 
-                throw new HttpException(400, "Verification code has expired", [
-                    {
-                        type: "code",
-                        message: "Verification code has expired"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Verification code has expired",
+                    [
+                        {
+                            type: "code",
+                            message: "Verification code has expired"
+                        }
+                    ]
+                );
             }
 
             // Verify the user
@@ -421,12 +467,16 @@ export class AuthController {
             const dbUser = await userModel.findById(user.id);
 
             if (!dbUser)
-                throw new HttpException(400, "Email not found", [
-                    {
-                        type: "email",
-                        message: "Email not found"
-                    }
-                ]);
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Email not found",
+                    [
+                        {
+                            type: "email",
+                            message: "Email not found"
+                        }
+                    ]
+                );
 
             await verificationModel.deleteOne({
                 user: user.id

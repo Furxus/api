@@ -19,6 +19,8 @@ import { instrument } from "@socket.io/admin-ui";
 
 import Mailgun from "mailgun.js";
 import formData from "form-data";
+import fileUpload from "express-fileupload";
+import { ServersController } from "./controllers/servers.controller";
 
 const port = process.env.PORT || 4000;
 
@@ -29,11 +31,17 @@ const database = new Database();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+    fileUpload({
+        limits: { fileSize: 50 * 1024 * 1024 }
+    })
+);
 
 const controllers = [
     new MainController(),
     new AuthController(),
-    new MeController()
+    new MeController(),
+    new ServersController()
 ];
 
 app.use(authMiddlewareExpress);

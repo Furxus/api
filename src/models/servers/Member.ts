@@ -1,33 +1,55 @@
 import { type InferSchemaType, Schema, model } from "mongoose";
 
-const memberSchema = new Schema({
-    roles: {
-        type: [String],
-        ref: "roles",
-        required: true
+const memberSchema = new Schema(
+    {
+        roles: {
+            type: [String],
+            ref: "roles",
+            required: true
+        },
+        permissions: [],
+        server: {
+            type: String,
+            ref: "servers",
+            required: true
+        },
+        user: {
+            type: String,
+            ref: "users",
+            required: true
+        },
+        joinedAt: {
+            type: Date,
+            required: true
+        },
+        joinedTimestamp: {
+            type: Number,
+            required: true
+        },
+        updatedAt: Date,
+        updatedTimestamp: Number
     },
-    permissions: [],
-    server: {
-        type: String,
-        ref: "servers",
-        required: true
-    },
-    user: {
-        type: String,
-        ref: "users",
-        required: true
-    },
-    joinedAt: {
-        type: Date,
-        required: true
-    },
-    joinedTimestamp: {
-        type: Number,
-        required: true
-    },
-    updatedAt: Date,
-    updatedTimestamp: Number
-});
+    {
+        virtuals: {
+            id: {
+                get: function () {
+                    return this.user;
+                },
+                set: function (v: string) {
+                    this.user = v;
+                }
+            }
+        },
+        toJSON: {
+            virtuals: true,
+            transform: function (_, ret) {
+                delete ret._id;
+                delete ret.__v;
+                return ret;
+            }
+        }
+    }
+);
 
 memberSchema.pre("save", function (next) {
     this.set({
