@@ -28,42 +28,11 @@ const serverSchema = new Schema(
             ref: "users",
             required: true
         },
-        invites: [
-            {
-                code: {
-                    type: String,
-                    required: true
-                },
-                uses: {
-                    type: Number,
-                    default: 0
-                },
-                maxUses: {
-                    type: Number,
-                    default: 0
-                },
-                createdBy: {
-                    type: String,
-                    required: true
-                },
-                expiresAt: {
-                    type: Date,
-                    default: null
-                },
-                expiresTimestamp: {
-                    type: Number,
-                    default: null
-                },
-                createdAt: {
-                    type: Date,
-                    required: true
-                },
-                createdTimestamp: {
-                    type: Number,
-                    required: true
-                }
-            }
-        ],
+        invites: {
+            type: [String],
+            ref: "invites",
+            default: []
+        },
         members: {
             type: [String],
             ref: "members",
@@ -91,36 +60,6 @@ const serverSchema = new Schema(
         updatedTimestamp: Number
     },
     {
-        methods: {
-            generateInviteLink: function (
-                serverId: string,
-                memberId: string,
-                maxUses: number = 0,
-                expiresAt?: Date
-            ) {
-                // Generate 9 random characters
-                const characters =
-                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-                let code = "";
-                for (let i = 0; i < 9; i++) {
-                    code += characters.charAt(
-                        Math.floor(Math.random() * characters.length)
-                    );
-                }
-
-                this.invites.push({
-                    code,
-                    maxUses,
-                    expiresAt,
-                    server: serverId,
-                    createdBy: memberId,
-                    createdAt: new Date(),
-                    createdTimestamp: Date.now()
-                });
-
-                return code;
-            }
-        },
         virtuals: {
             id: {
                 get: function () {

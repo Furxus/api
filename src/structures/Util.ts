@@ -26,3 +26,16 @@ export const colorThief = new ColorThief();
 
 export const genSnowflake = () =>
     Snowflake.generate({ timestamp: 1731283200, shard_id: threadId });
+
+export const randInviteCode = () => {
+    const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let code = "";
+    for (let i = 0; i < 9; i++) {
+        code += characters.charAt(
+            Math.floor(Math.random() * characters.length)
+        );
+    }
+
+    return code;
+};
