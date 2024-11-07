@@ -220,15 +220,15 @@ export class AuthController {
 
             const code = crypto.randomBytes(6).toString("hex");
 
-            const expires = moment().add("1", "day");
+            // Create verification document
 
             // Create a verification document
             const verification = new verificationModel({
                 _id: genSnowflake(),
                 user: user.id,
                 code,
-                expiresAt: expires.toDate(),
-                expiresTimestamp: expires.unix()
+                expiresAt: moment().add(1, "day").toDate(),
+                expiresTimestamp: moment().add(1, "day").unix()
             });
 
             const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verification.code}`;
@@ -246,7 +246,7 @@ export class AuthController {
             await user.save();
             await verification.save();
 
-            res.status(HTTP_RESPONSE_CODE.CREATED).json({
+            res.status(201).json({
                 success: true
             });
         } catch (err) {

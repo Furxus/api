@@ -2,6 +2,12 @@ import { type InferSchemaType, Schema, model } from "mongoose";
 
 const memberSchema = new Schema(
     {
+        _id: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true
+        },
         roles: {
             type: [String],
             ref: "roles",

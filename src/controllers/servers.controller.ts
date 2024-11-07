@@ -11,6 +11,7 @@ import memberModel from "../models/servers/Member";
 import bucket from "../structures/AssetManagement";
 import sharp from "sharp";
 import inviteModel from "../models/servers/Invite";
+import userModel from "../models/User";
 
 export class ServersController {
     path = "/servers";
@@ -33,6 +34,12 @@ export class ServersController {
                 );
 
             const { user } = req;
+
+            if (!userModel.findById(user.id))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
 
             const { name } = req.body;
 
@@ -73,6 +80,7 @@ export class ServersController {
             });
 
             const member = new memberModel({
+                _id: genSnowflake(),
                 user: user.id,
                 server: server.id,
                 permissions: ["Administrator"],

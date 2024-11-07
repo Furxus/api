@@ -10,6 +10,7 @@ import { genSnowflake } from "../structures/Util";
 import bucket from "../structures/AssetManagement";
 
 import sharp from "sharp";
+import { sockets } from "../App";
 
 export class MeController {
     path = "/@me";
@@ -20,12 +21,29 @@ export class MeController {
         this.router.get(`${this.path}/servers`, this.getMeServers as any);
     }
 
-    async getMe(req: RequestWithUser, res: Response) {
-        res.json(await userModel.findById(req.user.id));
+    async getMe(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            if (!req.user)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            res.json(await userModel.findById(req.user.id));
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
     }
 
     async updateMe(req: RequestWithUser, res: Response, next: NextFunction) {
         try {
+            if (!req.user)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
             const user = await userModel.findById(req.user.id);
 
             if (!user)
@@ -104,6 +122,12 @@ export class MeController {
                 user.bio = req.body.bio;
             }
 
+            const socket = sockets.get(user.id);
+
+            if (socket) {
+                socket.emit("me:update", user);
+            }
+
             await user.save();
 
             res.json(user);
@@ -119,9 +143,24 @@ export class MeController {
         next: NextFunction
     ) {
         try {
+            if (!req.user)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            if (!(await userModel.findById(req.user.id)))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unaothorized"
+                );
+
             const servers = await serverModel
                 .find({
-                    members: req.user.id
+                    $or: [
+                        { owner: req.user?.id },
+                        { members: { $elemMatch: { user: req.user?.id } } }
+                    ]
                 })
                 .populate("owner")
                 .populate({

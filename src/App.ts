@@ -3,7 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { createServer } from "http";
 
-import { Server as SocketServer } from "socket.io";
+import { Socket, Server as SocketServer } from "socket.io";
 
 import Database from "./structures/Database";
 import logger from "./structures/Logger";
@@ -58,12 +58,20 @@ const io = new SocketServer(http, {
     }
 });
 
+const sockets = new Map<string, Socket>();
+
 io.use(authMiddlewareIO as any);
 
-io.on("connection", (socket) => {
+io.on("connection", (socket: any) => {
     logger.debug(`Socket connected: ${socket.id}`);
 
-    socket.to(socket.id).emit("me", (socket as any).user);
+    if (socket.user) sockets.set(socket.user.id, socket);
+
+    socket.on("disconnect", () => {
+        logger.debug(`Socket disconnected: ${socket.id}`);
+
+        if (socket.user) sockets.delete(socket.user.id);
+    });
 });
 
 instrument(io, {
@@ -82,4 +90,4 @@ http.listen(port, () => {
     logger.info(`Socket is running on ${port}`);
 });
 
-export { http, database, app, io, mailgun };
+export { http, database, app, io, mailgun, sockets };
