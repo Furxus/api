@@ -19,6 +19,8 @@ export class ServersController {
 
     constructor() {
         this.router.put(this.path, this.createServer as any);
+        this.router.delete(`${this.path}/:id`, this.deleteServer as any);
+        this.router.post(this.path, this.joinServer as any);
     }
 
     async createServer(
@@ -132,6 +134,63 @@ export class ServersController {
             await invite.save();
 
             res.json(server);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async deleteServer(
+        req: RequestWithUser,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            if (!req.user)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            const { user } = req;
+
+            if (!userModel.findById(user.id))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            const { id } = req.params;
+
+            const server = await serverModel.findById(id);
+
+            if (!server)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Server not found"
+                );
+
+            if (server.owner !== user.id)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "You are not the owner of this server"
+                );
+
+            await server.deleteOne();
+            await channelModel.deleteMany({ server: server.id });
+            await memberModel.deleteMany({ server: server.id });
+            await inviteModel.deleteMany({ server: server.id });
+
+            res.json(server);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async joinServer(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            
         } catch (err) {
             logger.error(err);
             next(err);
