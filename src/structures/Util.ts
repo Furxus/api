@@ -2,6 +2,10 @@ import axios from "axios";
 import ColorThief from "@yaredfall/color-thief-ts";
 import { Snowflake } from "@theinternetfolks/snowflake";
 import { threadId } from "worker_threads";
+import type { RequestWithUser } from "@furxus/types";
+import { HttpException } from "../exceptions/HttpException";
+import { HTTP_RESPONSE_CODE } from "../Constants";
+import userModel from "../models/User";
 
 export const extractUrls = (content: string) => {
     const regex =
@@ -38,4 +42,18 @@ export const randInviteCode = () => {
     }
 
     return code;
+};
+
+export const checkIfLoggedIn = async (req: RequestWithUser) => {
+    if (!req.user)
+        throw new HttpException(
+            HTTP_RESPONSE_CODE.UNAUTHORIZED,
+            "Unauthorized"
+        );
+
+    if (!(await userModel.findById(req.user.id)))
+        throw new HttpException(
+            HTTP_RESPONSE_CODE.UNAUTHORIZED,
+            "Unauthorized"
+        );
 };

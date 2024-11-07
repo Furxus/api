@@ -64,16 +64,27 @@ const sockets = new Map<string, Socket>();
 
 io.use(authMiddlewareIO as any);
 
-io.on("connection", (socket: any) => {
+io.on("connection", (socket) => {
     logger.debug(`Socket connected: ${socket.id}`);
 
-    if (socket.user) sockets.set((socket as any).user.id, socket);
+    if ((socket as any).user) sockets.set((socket as any).user.id, socket);
 
     socket.on("server:focus", (serverId: string) => {
+        logger.debug(`Server focused: ${serverId}`);
         socket.join(serverId);
     });
+    socket.on("server:blur", (serverId: string) => {
+        logger.debug(`Server blurred: ${serverId}`);
+        socket.leave(serverId);
+    });
+
     socket.on("channel:join", (channelId: string) => {
+        logger.debug(`Channel joined: ${channelId}`);
         socket.join(channelId);
+    });
+    socket.on("channel:leave", (channelId: string) => {
+        logger.debug(`Channel left: ${channelId}`);
+        socket.leave(channelId);
     });
 
     socket.on("disconnect", () => {

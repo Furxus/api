@@ -1,4 +1,4 @@
-import type { RequestWithUser } from "@furxus/types";
+import type { MessageEmbed, RequestWithUser } from "@furxus/types";
 import { Router, type NextFunction, type Response } from "express";
 import logger from "../structures/Logger";
 import { HTTP_RESPONSE_CODE } from "../Constants";
@@ -6,8 +6,12 @@ import { HttpException } from "../exceptions/HttpException";
 import serverModel from "../models/servers/Server";
 import channelModel from "../models/servers/Channel";
 import messageModel from "../models/Message";
-import { genSnowflake } from "../structures/Util";
+import { checkIfLoggedIn, extractUrls, genSnowflake } from "../structures/Util";
 import { io } from "../App";
+import userModel from "../models/User";
+import dmChannelModel from "../models/DMChannel";
+
+import urlMetadata from "url-metadata";
 
 export class ChannelsController {
     path = "/channels";
@@ -17,6 +21,18 @@ export class ChannelsController {
         this.router.get(
             `${this.path}/:channelId/messages`,
             this.getChannelMessages as any
+        );
+        this.router.put(
+            `${this.path}/:channelId/messages`,
+            this.createMessage as any
+        );
+        this.router.patch(
+            `${this.path}/:channelId/messages/:messageId`,
+            this.editMessage as any
+        );
+        this.router.delete(
+            `${this.path}/:channelId/messages/:messageId`,
+            this.deleteMessage as any
         );
 
         this.router.get(
@@ -37,6 +53,252 @@ export class ChannelsController {
         );
     }
 
+    async editMessage(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            await checkIfLoggedIn(req);
+
+            const { channelId, messageId } = req.params;
+
+            if (!channelId || !messageId)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Channel ID and Message ID are required"
+                );
+
+            const { content } = req.body;
+
+            if (!content)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Content is required"
+                );
+
+            if (content.length < 1 || content.length > 2000)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Content must be between 1 and 2000 characters"
+                );
+
+            let channel = await channelModel.findById(channelId);
+
+            if (!channel) channel = await dmChannelModel.findById(channelId);
+
+            if (!channel)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Channel not found"
+                );
+
+            const message = await messageModel.findById(messageId);
+
+            if (!message)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Message not found"
+                );
+
+            if (message.author !== req.user.id)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            message.content = content;
+            message.edited = true;
+
+            const urls = extractUrls(content);
+            const metadatas: urlMetadata.Result[] = [];
+            for (const url of urls) {
+                const metadata = await urlMetadata(url).catch(() => null);
+                if (!metadata) continue;
+                metadatas.push(metadata);
+            }
+
+            const embeds: MessageEmbed[] = [];
+            for (const metadata of metadatas) {
+                embeds.push({
+                    title: metadata["og:title"],
+                    description: metadata["og:description"],
+                    url: metadata["og:url"],
+                    image: metadata["og:image"],
+                    author: {
+                        name: metadata["og:site_name"],
+                        url: metadata["og:url"],
+                        iconUrl: !metadata.favicons[0].href.startsWith("/")
+                            ? (metadata.favicons[0]?.href ?? null)
+                            : null
+                    }
+                });
+            }
+
+            message.embeds = embeds;
+
+            await message.save();
+            await message.populate("author");
+            await message.populate("channel");
+
+            io.to(channel.id).emit("message:update", message);
+
+            res.json(message);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async deleteMessage(
+        req: RequestWithUser,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            await checkIfLoggedIn(req);
+
+            const { channelId, messageId } = req.params;
+
+            if (!channelId || !messageId)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Channel ID and Message ID are required"
+                );
+
+            const channel = await channelModel.findById(channelId);
+
+            if (!channel)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Channel not found"
+                );
+
+            const message = await messageModel.findById(messageId);
+
+            if (!message)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Message not found"
+                );
+
+            if (message.author !== req.user.id)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            await message.deleteOne();
+
+            channel.messages = channel.messages?.filter(
+                (m) => m !== message.id
+            );
+
+            await channel.save();
+
+            io.to(channel.id).emit("message:delete", message);
+
+            res.json(message);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async createMessage(
+        req: RequestWithUser,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            await checkIfLoggedIn(req);
+
+            const { channelId, content } = req.body;
+
+            if (!channelId || !content)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Channel ID and Content are required"
+                );
+
+            if (content.length < 1 || content.length > 2000)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Content must be between 1 and 2000 characters"
+                );
+
+            let channel = await channelModel.findById(channelId);
+
+            if (!channel) channel = await dmChannelModel.findById(channelId);
+
+            if (!channel)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Channel not found"
+                );
+
+            const urls = extractUrls(content);
+            const metadatas: urlMetadata.Result[] = [];
+            for (const url of urls) {
+                const metadata = await urlMetadata(url).catch(() => null);
+                if (!metadata) continue;
+                metadatas.push(metadata);
+            }
+
+            const embeds: MessageEmbed[] = [];
+            for (const metadata of metadatas) {
+                const embed = {
+                    title: metadata["og:title"],
+                    description: metadata["og:description"].replaceAll(
+                        " ",
+                        "\n"
+                    ),
+                    url: metadata["og:url"],
+                    image: metadata["og:image"],
+                    media:
+                        metadata["og:video:secure_url"] ??
+                        metadata["og:video:url"] ??
+                        null,
+                    author: {
+                        name: metadata["og:site_name"].split(",")[0],
+                        url: metadata["og:url"],
+                        iconUrl: !metadata.favicons[0]?.href.startsWith("/")
+                            ? (metadata.favicons[0]?.href ?? null)
+                            : null
+                    }
+                };
+
+                if (
+                    embed.url.includes("spotify") &&
+                    embed.url.includes("track")
+                )
+                    embed.media = `https://open.spotify.com/embed/track/${embed.url.split("/")[4]}`;
+
+                embeds.push(embed);
+            }
+
+            const message = new messageModel({
+                _id: genSnowflake(),
+                channel: channel.id,
+                author: req.user.id,
+                content,
+                embeds,
+                createdAt: new Date(),
+                createdTimestamp: Date.now()
+            });
+
+            await message.save();
+            await message.populate("author");
+            await message.populate("channel");
+            channel.messages?.push(message.id);
+
+            await channel.save();
+
+            io.to(channel.id).emit("message:create", message);
+
+            res.json(message);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
     async deleteChannel(
         req: RequestWithUser,
         res: Response,
@@ -51,7 +313,7 @@ export class ChannelsController {
 
             const { user } = req;
 
-            if (!user)
+            if (!(await userModel.findById(user.id)))
                 throw new HttpException(
                     HTTP_RESPONSE_CODE.UNAUTHORIZED,
                     "Unauthorized"
@@ -64,8 +326,6 @@ export class ChannelsController {
                     HTTP_RESPONSE_CODE.BAD_REQUEST,
                     "Channel ID is required"
                 );
-
-            console.log(channelId);
 
             const channel = await channelModel.findById(channelId);
 
@@ -210,11 +470,13 @@ export class ChannelsController {
                           }
                         : {})
                 })
-                .sort({ createdTimestamp: -1 });
+                .sort({ createdTimestamp: -1 })
+                .populate("author")
+                .populate("channel");
 
             if (limit) messages.limit(parseInt(limit.toString()));
 
-            res.json(await messages);
+            res.json((await messages).reverse());
         } catch (err) {
             logger.error(err);
             next(err);
