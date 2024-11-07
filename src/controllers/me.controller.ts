@@ -10,7 +10,6 @@ import { genSnowflake } from "../structures/Util";
 import bucket from "../structures/AssetManagement";
 
 import sharp from "sharp";
-import memberModel from "../models/servers/Member";
 
 export class MeController {
     path = "/@me";
@@ -78,14 +77,16 @@ export class MeController {
                     mimetype
                 );
 
-                const pngBuffer = await sharp(data).png().toBuffer();
+                if (mimetype.includes("gif")) {
+                    const pngBuffer = await sharp(data).png().toBuffer();
 
-                await bucket.upload(
-                    pngBuffer,
-                    `avatars/${user.id}/${snowflake}.png`,
-                    {},
-                    "image/png"
-                );
+                    await bucket.upload(
+                        pngBuffer,
+                        `avatars/${user.id}/${snowflake}.png`,
+                        {},
+                        "image/png"
+                    );
+                }
 
                 if (iconUrl) user.avatar = iconUrl.publicUrls[0];
             }
