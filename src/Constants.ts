@@ -5,7 +5,8 @@ export const HTTP_RESPONSE_CODE = {
     BAD_REQUEST: 400,
     SUCCESS: 200,
     UNAUTHORIZED: 401,
-    SERVER_ERROR: 500
+    SERVER_ERROR: 500,
+    FORBIDDEN: 403
 };
 
 export const enum HttpStatusCode {
@@ -14,5 +15,6 @@ export const enum HttpStatusCode {
     CONFLICT = 409,
     BAD_REQUEST = 400,
     SUCCESS = 200,
-    UNAUTHORIZED = 401
+    UNAUTHORIZED = 401,
+    FORBIDDEN = 403
 }

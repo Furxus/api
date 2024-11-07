@@ -21,6 +21,7 @@ import Mailgun from "mailgun.js";
 import formData from "form-data";
 import fileUpload from "express-fileupload";
 import { ServersController } from "./controllers/servers.controller";
+import { ChannelsController } from "./controllers/channels.controller";
 
 const port = process.env.PORT || 4000;
 
@@ -41,7 +42,8 @@ const controllers = [
     new MainController(),
     new AuthController(),
     new MeController(),
-    new ServersController()
+    new ServersController(),
+    new ChannelsController()
 ];
 
 app.use(authMiddlewareExpress);
@@ -65,12 +67,19 @@ io.use(authMiddlewareIO as any);
 io.on("connection", (socket: any) => {
     logger.debug(`Socket connected: ${socket.id}`);
 
-    if (socket.user) sockets.set(socket.user.id, socket);
+    if (socket.user) sockets.set((socket as any).user.id, socket);
+
+    socket.on("server:focus", (serverId: string) => {
+        socket.join(serverId);
+    });
+    socket.on("channel:join", (channelId: string) => {
+        socket.join(channelId);
+    });
 
     socket.on("disconnect", () => {
         logger.debug(`Socket disconnected: ${socket.id}`);
 
-        if (socket.user) sockets.delete(socket.user.id);
+        if ((socket as any).user) sockets.delete((socket as any).user.id);
     });
 });
 

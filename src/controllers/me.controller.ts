@@ -159,7 +159,7 @@ export class MeController {
                 .find({
                     $or: [
                         { owner: req.user?.id },
-                        { members: { $elemMatch: { user: req.user?.id } } }
+                        { members: { $in: [req.user?.id] } }
                     ]
                 })
                 .populate("owner")

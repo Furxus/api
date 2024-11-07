@@ -190,7 +190,72 @@ export class ServersController {
 
     async joinServer(req: RequestWithUser, res: Response, next: NextFunction) {
         try {
-            
+            if (!req.user)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            const { user } = req;
+
+            if (!userModel.findById(user.id))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
+                    "Unauthorized"
+                );
+
+            const { code } = req.body;
+
+            const invite = await inviteModel.findOne({ code });
+            if (!invite)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Invalid invite code"
+                );
+
+            const server = await serverModel.findById(invite.server);
+
+            if (!server)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.NOT_FOUND,
+                    "Server not found"
+                );
+
+            if (server.members?.includes(user.id)) {
+                res.json(server);
+                return;
+            }
+
+            if (invite.maxUses > 0 && invite.uses >= invite.maxUses)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invite has reached maximum uses"
+                );
+
+            if (invite.expiresTimestamp && invite.expiresTimestamp < Date.now())
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "Invite has expired"
+                );
+
+            const member = new memberModel({
+                _id: genSnowflake(),
+                user: user.id,
+                server: server.id,
+                permissions: [],
+                joinedAt: new Date(),
+                joinedTimestamp: Date.now()
+            });
+
+            server.members?.push(member.user);
+
+            server.markModified("members");
+
+            await member.save();
+            await server.save();
+            await invite.updateOne({ $inc: { uses: 1 } });
+
+            res.json(server);
         } catch (err) {
             logger.error(err);
             next(err);
