@@ -109,6 +109,10 @@ export class MeController {
                 if (iconUrl) user.avatar = iconUrl.publicUrls[0];
             }
 
+            if (req.body?.avatar) {
+                user.avatar = req.body.avatar;
+            }
+
             if (req.body.defaultAvatar) {
                 user.avatar = null;
                 user.defaultAvatar = req.body.defaultAvatar;
