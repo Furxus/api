@@ -68,6 +68,15 @@ const messageSchema = new Schema(
                 delete ret.__v;
                 return ret;
             }
+        },
+        toObject: {
+            virtuals: true,
+            transform: function (_, ret) {
+                delete ret.password;
+                delete ret.privateKey;
+                delete ret.email;
+                return ret;
+            }
         }
     }
 );

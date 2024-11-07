@@ -202,6 +202,15 @@ const userSchema = new Schema(
                 delete ret.email;
                 return ret;
             }
+        },
+        toObject: {
+            virtuals: true,
+            transform: function (_, ret) {
+                delete ret.password;
+                delete ret.privateKey;
+                delete ret.email;
+                return ret;
+            }
         }
     }
 );
