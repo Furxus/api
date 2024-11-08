@@ -6,11 +6,12 @@ import logger from "../structures/Logger";
 import { HttpException } from "../exceptions/HttpException";
 import { HTTP_RESPONSE_CODE } from "../Constants";
 import type { UploadedFile } from "express-fileupload";
-import { genSnowflake } from "../structures/Util";
+import { checkIfLoggedIn, genSnowflake } from "../structures/Util";
 import bucket from "../structures/AssetManagement";
 
 import sharp from "sharp";
 import { sockets } from "../App";
+import dmChannelModel from "../models/DMChannel";
 
 export class MeController {
     path = "/@me";
@@ -19,17 +20,14 @@ export class MeController {
         this.router.get(this.path, this.getMe as any);
         this.router.patch(this.path, this.updateMe as any);
         this.router.get(`${this.path}/servers`, this.getMeServers as any);
+        this.router.get(`${this.path}/dms`, this.getMeDMs as any);
     }
 
     async getMe(req: RequestWithUser, res: Response, next: NextFunction) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
-            res.json(await userModel.findById(req.user.id));
+            res.json(user);
         } catch (err) {
             logger.error(err);
             next(err);
@@ -38,19 +36,7 @@ export class MeController {
 
     async updateMe(req: RequestWithUser, res: Response, next: NextFunction) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const user = await userModel.findById(req.user.id);
-
-            if (!user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.NOT_FOUND,
-                    "Uh oh, user not found"
-                );
+            const user = await checkIfLoggedIn(req);
 
             if (req.body.username) {
                 const { username } = req.body;
@@ -147,17 +133,7 @@ export class MeController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            if (!(await userModel.findById(req.user.id)))
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unaothorized"
-                );
+            await checkIfLoggedIn(req);
 
             const servers = await serverModel
                 .find({
@@ -177,6 +153,21 @@ export class MeController {
                 .then((servers) => servers.reverse());
 
             res.json(servers);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async getMeDMs(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            const user = await checkIfLoggedIn(req);
+
+            const dms = await dmChannelModel.find({
+                $or: [{ recipient1: user.id }, { recipient2: user.id }]
+            });
+
+            res.json(dms);
         } catch (err) {
             logger.error(err);
             next(err);

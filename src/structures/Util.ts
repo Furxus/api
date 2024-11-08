@@ -44,9 +44,13 @@ export const checkIfLoggedIn = async (req: RequestWithUser) => {
             "Unauthorized"
         );
 
-    if (!(await userModel.findById(req.user.id)))
+    const user = await userModel.findById(req.user.id);
+
+    if (!user)
         throw new HttpException(
             HTTP_RESPONSE_CODE.UNAUTHORIZED,
             "Unauthorized"
         );
+
+    return user;
 };

@@ -5,13 +5,16 @@ import { HttpException } from "../exceptions/HttpException";
 import { HTTP_RESPONSE_CODE } from "../Constants";
 import type { UploadedFile } from "express-fileupload";
 import serverModel from "../models/servers/Server";
-import { genSnowflake, randInviteCode } from "../structures/Util";
+import {
+    checkIfLoggedIn,
+    genSnowflake,
+    randInviteCode
+} from "../structures/Util";
 import channelModel from "../models/servers/Channel";
 import memberModel from "../models/servers/Member";
 import bucket from "../structures/AssetManagement";
 import sharp from "sharp";
 import inviteModel from "../models/servers/Invite";
-import userModel from "../models/User";
 
 export class ServersController {
     path = "/servers";
@@ -29,19 +32,7 @@ export class ServersController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!userModel.findById(user.id))
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { name } = req.body;
 
@@ -146,19 +137,7 @@ export class ServersController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!userModel.findById(user.id))
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { id } = req.params;
 
@@ -190,19 +169,7 @@ export class ServersController {
 
     async joinServer(req: RequestWithUser, res: Response, next: NextFunction) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!userModel.findById(user.id))
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { code } = req.body;
 

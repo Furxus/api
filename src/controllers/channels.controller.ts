@@ -8,7 +8,6 @@ import channelModel from "../models/servers/Channel";
 import messageModel from "../models/Message";
 import { checkIfLoggedIn, genSnowflake } from "../structures/Util";
 import { io } from "../App";
-import userModel from "../models/User";
 import dmChannelModel from "../models/DMChannel";
 
 import urlMetadata from "url-metadata";
@@ -45,7 +44,6 @@ export class ChannelsController {
             `${this.path}/:serverId`,
             this.getServerChannels as any
         );
-        this.router.get(`${this.path}/:channelId`, this.getChannel as any);
 
         this.router.put(this.path, this.createChannel as any);
 
@@ -307,19 +305,7 @@ export class ChannelsController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!(await userModel.findById(user.id)))
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { channelId } = req.params;
 
@@ -368,19 +354,7 @@ export class ChannelsController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { serverId, name, type } = req.body;
 
@@ -429,19 +403,7 @@ export class ChannelsController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            await checkIfLoggedIn(req);
 
             const { channelId } = req.params;
 
@@ -491,19 +453,7 @@ export class ChannelsController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { serverId, channelId } = req.params;
 
@@ -548,19 +498,7 @@ export class ChannelsController {
         next: NextFunction
     ) {
         try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
+            const user = await checkIfLoggedIn(req);
 
             const { serverId } = req.params;
 
@@ -585,45 +523,6 @@ export class ChannelsController {
                 );
 
             res.json(await channelModel.find({ server: server.id }));
-        } catch (err) {
-            logger.error(err);
-            next(err);
-        }
-    }
-
-    async getChannel(req: RequestWithUser, res: Response, next: NextFunction) {
-        try {
-            if (!req.user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { user } = req;
-
-            if (!user)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.UNAUTHORIZED,
-                    "Unauthorized"
-                );
-
-            const { channelId } = req.params;
-
-            if (!channelId)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.BAD_REQUEST,
-                    "Channel ID is required"
-                );
-
-            const channel = await channelModel.findById(channelId);
-
-            if (!channel)
-                throw new HttpException(
-                    HTTP_RESPONSE_CODE.NOT_FOUND,
-                    "Channel not found"
-                );
-
-            res.json(channel);
         } catch (err) {
             logger.error(err);
             next(err);

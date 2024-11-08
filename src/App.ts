@@ -22,6 +22,8 @@ import formData from "form-data";
 import fileUpload from "express-fileupload";
 import { ServersController } from "./controllers/servers.controller";
 import { ChannelsController } from "./controllers/channels.controller";
+import { FriendRequestsController } from "./controllers/friendRequests.controller";
+import { DMsController } from "./controllers/dms.controller";
 
 const port = process.env.PORT || 4000;
 
@@ -43,7 +45,9 @@ const controllers = [
     new AuthController(),
     new MeController(),
     new ServersController(),
-    new ChannelsController()
+    new ChannelsController(),
+    new FriendRequestsController(),
+    new DMsController()
 ];
 
 app.use(authMiddlewareExpress);
