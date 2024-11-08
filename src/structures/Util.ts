@@ -7,13 +7,6 @@ import { HttpException } from "../exceptions/HttpException";
 import { HTTP_RESPONSE_CODE } from "../Constants";
 import userModel from "../models/User";
 
-export const extractUrls = (content: string) => {
-    const regex =
-        /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,63}\b([-a-zA-Z0-9()'@:%_+.~#?!&//=]*)/gi;
-
-    return content.match(regex) ?? [];
-};
-
 export const genRandColor = () =>
     [...Array(6)]
         .map(() => Math.floor(Math.random() * 16).toString(16))

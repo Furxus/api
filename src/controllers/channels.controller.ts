@@ -6,12 +6,14 @@ import { HttpException } from "../exceptions/HttpException";
 import serverModel from "../models/servers/Server";
 import channelModel from "../models/servers/Channel";
 import messageModel from "../models/Message";
-import { checkIfLoggedIn, extractUrls, genSnowflake } from "../structures/Util";
+import { checkIfLoggedIn, genSnowflake } from "../structures/Util";
 import { io } from "../App";
 import userModel from "../models/User";
 import dmChannelModel from "../models/DMChannel";
 
 import urlMetadata from "url-metadata";
+
+import getUrls from "get-urls";
 
 export class ChannelsController {
     path = "/channels";
@@ -106,7 +108,7 @@ export class ChannelsController {
             message.content = content;
             message.edited = true;
 
-            const urls = extractUrls(content);
+            const urls = getUrls(content);
             const metadatas: urlMetadata.Result[] = [];
             for (const url of urls) {
                 const metadata = await urlMetadata(url).catch(() => null);
@@ -233,7 +235,7 @@ export class ChannelsController {
                     "Channel not found"
                 );
 
-            const urls = extractUrls(content);
+            const urls = getUrls(content);
             const metadatas: urlMetadata.Result[] = [];
             for (const url of urls) {
                 const metadata = await urlMetadata(url).catch(() => null);
