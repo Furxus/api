@@ -24,6 +24,7 @@ import { ServersController } from "./controllers/servers.controller";
 import { ChannelsController } from "./controllers/channels.controller";
 import { FriendRequestsController } from "./controllers/friendRequests.controller";
 import { DMsController } from "./controllers/dms.controller";
+import { FriendsController } from "./controllers/friends.controller";
 
 const port = process.env.PORT || 4000;
 
@@ -47,7 +48,8 @@ const controllers = [
     new ServersController(),
     new ChannelsController(),
     new FriendRequestsController(),
-    new DMsController()
+    new DMsController(),
+    new FriendsController()
 ];
 
 app.use(authMiddlewareExpress);

@@ -163,9 +163,20 @@ export class MeController {
         try {
             const user = await checkIfLoggedIn(req);
 
-            const dms = await dmChannelModel.find({
-                $or: [{ recipient1: user.id }, { recipient2: user.id }]
-            });
+            const dms = await dmChannelModel
+                .find({
+                    closed: false,
+                    $or: [{ recipient1: user.id }, { recipient2: user.id }]
+                })
+                .populate("recipient1")
+                .populate("recipient2")
+                .populate({
+                    path: "messages",
+                    options: {
+                        sort: { createdAt: -1 },
+                        limit: 1
+                    }
+                });
 
             res.json(dms);
         } catch (err) {

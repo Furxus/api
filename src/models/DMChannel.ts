@@ -18,6 +18,11 @@ const dmChannelSchema = new Schema(
             ref: "users",
             required: true
         },
+        closed: {
+            type: Boolean,
+            required: true,
+            default: false
+        },
         messages: {
             type: [String],
             ref: "messages",

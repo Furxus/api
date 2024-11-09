@@ -106,7 +106,7 @@ export class ChannelsController {
             message.content = content;
             message.edited = true;
 
-            const urls = getUrls(content);
+            const urls = getUrls(JSON.stringify(content));
             const metadatas: urlMetadata.Result[] = [];
             for (const url of urls) {
                 const metadata = await urlMetadata(url).catch(() => null);
@@ -209,9 +209,10 @@ export class ChannelsController {
         try {
             await checkIfLoggedIn(req);
 
-            const { channelId, content } = req.body;
+            const { content } = req.body;
+            const { channelId } = req.params;
 
-            if (!channelId || !content)
+            if (!content)
                 throw new HttpException(
                     HTTP_RESPONSE_CODE.BAD_REQUEST,
                     "Channel ID and Content are required"
@@ -233,7 +234,7 @@ export class ChannelsController {
                     "Channel not found"
                 );
 
-            const urls = getUrls(content);
+            const urls = getUrls(JSON.stringify(content));
             const metadatas: urlMetadata.Result[] = [];
             for (const url of urls) {
                 const metadata = await urlMetadata(url).catch(() => null);
@@ -413,7 +414,9 @@ export class ChannelsController {
                     "Channel ID is required"
                 );
 
-            const channel = await channelModel.findById(channelId);
+            let channel = await channelModel.findById(channelId);
+
+            if (!channel) channel = await dmChannelModel.findById(channelId);
 
             if (!channel)
                 throw new HttpException(
