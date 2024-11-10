@@ -137,6 +137,8 @@ export class ChannelsController {
             await message.populate("author");
             await message.populate("channel");
 
+            if (!message.channel) (message.channel as any) = channel;
+
             io.to(channel.id).emit("message:update", message);
 
             res.json(message);
@@ -289,6 +291,9 @@ export class ChannelsController {
             await message.save();
             await message.populate("author");
             await message.populate("channel");
+
+            if (!message.channel) (message.channel as any) = channel;
+
             channel.messages?.push(message.id);
 
             await channel.save();
