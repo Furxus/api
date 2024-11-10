@@ -50,6 +50,7 @@
         "moment": "^2.30.1",
         "mongoose": "^8.8.0",
         "node-cloudflare-r2": "^0.4.0",
+        "rgb-hex": "^4.1.0",
         "sharp": "^0.33.5",
         "socket.io": "^4.8.1",
         "url-metadata": "^4.1.1",

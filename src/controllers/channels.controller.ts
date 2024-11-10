@@ -162,7 +162,9 @@ export class ChannelsController {
                     "Channel ID and Message ID are required"
                 );
 
-            const channel = await channelModel.findById(channelId);
+            let channel = await channelModel.findById(channelId);
+
+            if (!channel) channel = await dmChannelModel.findById(channelId);
 
             if (!channel)
                 throw new HttpException(
@@ -414,9 +416,14 @@ export class ChannelsController {
                     "Channel ID is required"
                 );
 
-            let channel = await channelModel.findById(channelId);
+            let channel: any = await channelModel
+                .findById(channelId)
+                .select("-messages");
 
-            if (!channel) channel = await dmChannelModel.findById(channelId);
+            if (!channel)
+                channel = await dmChannelModel
+                    .findById(channelId)
+                    .select("-messages");
 
             if (!channel)
                 throw new HttpException(
@@ -443,7 +450,14 @@ export class ChannelsController {
 
             if (limit) messages.limit(parseInt(limit.toString()));
 
-            res.json((await messages).reverse());
+            const msgs = await messages;
+            for (const message of msgs) {
+                if (!message.channel) {
+                    (message.channel as any) = channel;
+                }
+            }
+
+            res.json(msgs.reverse());
         } catch (err) {
             logger.error(err);
             next(err);

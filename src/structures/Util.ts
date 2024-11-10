@@ -7,6 +7,9 @@ import { HttpException } from "../exceptions/HttpException";
 import { HTTP_RESPONSE_CODE } from "../Constants";
 import userModel from "../models/User";
 
+import sharp from "sharp";
+import rgbHex from "rgb-hex";
+
 export const genRandColor = () =>
     [...Array(6)]
         .map(() => Math.floor(Math.random() * 16).toString(16))
@@ -53,4 +56,10 @@ export const checkIfLoggedIn = async (req: RequestWithUser) => {
         );
 
     return user;
+};
+
+export const dominantHex = async (url: string) => {
+    const { dominant } = await sharp(await imageToBuffer(url)).stats();
+
+    return rgbHex(dominant.r, dominant.g, dominant.b);
 };

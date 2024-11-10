@@ -121,21 +121,43 @@ const userSchema = new Schema(
         },
         updatedAt: Date,
         updatedTimestamp: Number,
-        followers: [String],
-        following: [String],
-        friends: [String],
+        followers: {
+            type: [String],
+            ref: "users",
+            default: []
+        },
+        following: {
+            type: [String],
+            ref: "users",
+            default: []
+        },
+        friends: {
+            type: [String],
+            ref: "users",
+            default: []
+        },
         friendRequests: {
             sent: {
                 type: [String],
+                ref: "users",
                 default: []
             },
             received: {
                 type: [String],
+                ref: "users",
                 default: []
             }
         },
-        blocks: [String],
-        blockedBy: [String],
+        blocks: {
+            type: [String],
+            ref: "users",
+            default: []
+        },
+        blockedBy: {
+            type: [String],
+            ref: "users",
+            default: []
+        },
         privacy: {
             visiblity: {
                 type: String,
@@ -164,7 +186,11 @@ const userSchema = new Schema(
                 default: "dark"
             }
         },
-        shares: [String],
+        shares: {
+            type: [String],
+            ref: "posts",
+            default: []
+        },
         views: {
             type: Number,
             default: 0

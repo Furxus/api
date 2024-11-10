@@ -16,7 +16,7 @@ import Cryptr from "cryptr";
 import { decrypt, encrypt } from "../structures/Crypt";
 
 import bucket from "../structures/AssetManagement";
-import { colorThief, genRandColor, genSnowflake } from "../structures/Util";
+import { dominantHex, genSnowflake } from "../structures/Util";
 import verificationModel from "../models/Verification";
 import { mailgun } from "../App";
 import type { RequestWithUser } from "@furxus/types";
@@ -198,12 +198,6 @@ export class AuthController {
                 `defaultAvatar/${randomSpecies}.png`
             )[0];
 
-            let { dominantColor } = (await colorThief.getColorAsync(imageUrl, {
-                colorType: "hex"
-            })) as any;
-
-            if (!dominantColor) dominantColor = genRandColor();
-
             const user = new userModel({
                 _id: genSnowflake(),
                 username,
@@ -212,7 +206,7 @@ export class AuthController {
                 password: newPass,
                 privateKey,
                 defaultAvatar: imageUrl,
-                accentColor: "#" + dominantColor,
+                accentColor: "#" + dominantHex(imageUrl),
                 dateOfBirth: dateOfBirth.toDate(),
                 createdAt: new Date(),
                 createdTimestamp: Date.now()

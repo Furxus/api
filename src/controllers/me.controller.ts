@@ -6,7 +6,7 @@ import logger from "../structures/Logger";
 import { HttpException } from "../exceptions/HttpException";
 import { HTTP_RESPONSE_CODE } from "../Constants";
 import type { UploadedFile } from "express-fileupload";
-import { checkIfLoggedIn, genSnowflake } from "../structures/Util";
+import { checkIfLoggedIn, dominantHex, genSnowflake } from "../structures/Util";
 import bucket from "../structures/AssetManagement";
 
 import sharp from "sharp";
@@ -21,6 +21,7 @@ export class MeController {
         this.router.patch(this.path, this.updateMe as any);
         this.router.get(`${this.path}/servers`, this.getMeServers as any);
         this.router.get(`${this.path}/dms`, this.getMeDMs as any);
+        this.router.get(`${this.path}/friends`, this.getMeFriends as any);
     }
 
     async getMe(req: RequestWithUser, res: Response, next: NextFunction) {
@@ -93,15 +94,23 @@ export class MeController {
                 }
 
                 if (iconUrl) user.avatar = iconUrl.publicUrls[0];
+
+                user.accentColor = await dominantHex(iconUrl.publicUrls[0]);
             }
 
             if (req.body?.avatar) {
                 user.avatar = req.body.avatar;
+                user.accentColor = await dominantHex(req.body.avatar);
             }
 
             if (req.body.defaultAvatar) {
                 user.avatar = null;
-                user.defaultAvatar = req.body.defaultAvatar;
+                const imageUrl = bucket.getObjectPublicUrls(
+                    `defaultAvatar/${req.body.defaultAvatar}.png`
+                )[0];
+                user.defaultAvatar = imageUrl;
+
+                user.accentColor = await dominantHex(imageUrl);
             }
 
             if (req.body.displayName) {
@@ -179,6 +188,25 @@ export class MeController {
                 });
 
             res.json(dms);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async getMeFriends(
+        req: RequestWithUser,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            const user = await checkIfLoggedIn(req);
+
+            const friends = await userModel.find({
+                _id: { $in: user.friends }
+            });
+
+            res.json(friends);
         } catch (err) {
             logger.error(err);
             next(err);
