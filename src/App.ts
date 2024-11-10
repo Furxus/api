@@ -62,7 +62,11 @@ const io = new SocketServer(http, {
     path: "/v2/socket-io",
     connectionStateRecovery: {},
     cors: {
-        origin: ["http://localhost:1420", "https://admin.socket.io"]
+        origin: [
+            "http://localhost:1420",
+            "https://admin.socket.io",
+            "https://furxus.com"
+        ]
     }
 });
 
@@ -101,7 +105,11 @@ io.on("connection", (socket) => {
 });
 
 instrument(io, {
-    auth: false,
+    auth: {
+        type: "basic",
+        username: "mateie",
+        password: process.env.ADMIN_UI_PASSWORD ?? ""
+    },
     mode: "development"
 });
 
