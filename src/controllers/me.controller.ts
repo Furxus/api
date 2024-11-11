@@ -12,6 +12,7 @@ import bucket from "../structures/AssetManagement";
 import sharp from "sharp";
 import { sockets } from "../App";
 import dmChannelModel from "../models/DMChannel";
+import emojiModel from "../models/Emoji";
 
 export class MeController {
     path = "/@me";
@@ -22,6 +23,115 @@ export class MeController {
         this.router.get(`${this.path}/servers`, this.getMeServers as any);
         this.router.get(`${this.path}/dms`, this.getMeDMs as any);
         this.router.get(`${this.path}/friends`, this.getMeFriends as any);
+        this.router.get(`${this.path}/emojis`, this.getMeEmojis as any);
+
+        this.router.put(`${this.path}/emojis`, this.addEmoji as any);
+        this.router.delete(`${this.path}/emojis`, this.removeEmojis as any);
+    }
+
+    async removeEmojis(
+        req: RequestWithUser,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            const user = await checkIfLoggedIn(req);
+
+            const { emojis: emojiIds } = req.body;
+
+            if (!emojiIds || !Array.isArray(emojiIds))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "No emoji ids provided"
+                );
+
+            const emojis = await emojiModel.find({ _id: { $in: emojiIds } });
+
+            if (!emojis.length)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "No emojis found"
+                );
+
+            if (emojis.some((emoji) => emoji.createdBy !== user.id))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.FORBIDDEN,
+                    "You do not have permission to delete these emojis"
+                );
+
+            await Promise.all(
+                emojis.map(async (emoji) => {
+                    await bucket.deleteObject(emoji.url);
+                    await emoji.deleteOne();
+                })
+            );
+
+            res.json({ success: true });
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async addEmoji(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            const user = await checkIfLoggedIn(req);
+
+            if (!req.files || !req.files.emoji)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "No emoji file provided"
+                );
+
+            const { name } = req.body;
+
+            if (!name)
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "No emoji name provided"
+                );
+
+            const { data, mimetype } = req.files.emoji as UploadedFile;
+
+            const snowflake = genSnowflake();
+
+            const emojiUrl = await bucket.upload(
+                data,
+                `emojis/${user.id}/${snowflake}.${mimetype.split("/")[1]}`,
+                {},
+                mimetype
+            );
+
+            const emoji = new emojiModel({
+                _id: genSnowflake(),
+                name,
+                shortCode: name.split(" ").join("_").toLowerCase(),
+                createdBy: user.id,
+                url: emojiUrl.publicUrls[0],
+                createdAt: new Date(),
+                createdTimestamp: Date.now()
+            });
+
+            await emoji.save();
+
+            res.json(emoji);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
+    }
+
+    async getMeEmojis(req: RequestWithUser, res: Response, next: NextFunction) {
+        try {
+            const user = await checkIfLoggedIn(req);
+
+            const emojis = await emojiModel.find({ createdBy: user.id });
+
+            res.json(emojis);
+        } catch (err) {
+            logger.error(err);
+            next(err);
+        }
     }
 
     async getMe(req: RequestWithUser, res: Response, next: NextFunction) {

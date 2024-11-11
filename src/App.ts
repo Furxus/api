@@ -25,6 +25,7 @@ import { ChannelsController } from "./controllers/channels.controller";
 import { FriendRequestsController } from "./controllers/friendRequests.controller";
 import { DMsController } from "./controllers/dms.controller";
 import { FriendsController } from "./controllers/friends.controller";
+import { EmojiController } from "./controllers/emojis.controller";
 
 const port = process.env.PORT || 4000;
 
@@ -49,7 +50,8 @@ const controllers = [
     new ChannelsController(),
     new FriendRequestsController(),
     new DMsController(),
-    new FriendsController()
+    new FriendsController(),
+    new EmojiController()
 ];
 
 app.use(authMiddlewareExpress);
