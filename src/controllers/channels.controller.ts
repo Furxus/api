@@ -6,13 +6,11 @@ import { HttpException } from "../exceptions/HttpException";
 import serverModel from "../models/servers/Server";
 import channelModel from "../models/servers/Channel";
 import messageModel from "../models/Message";
-import { checkIfLoggedIn, genSnowflake } from "../structures/Util";
+import { checkIfLoggedIn, genSnowflake, getUrls } from "../structures/Util";
 import { io } from "../App";
 import dmChannelModel from "../models/DMChannel";
 
 import urlMetadata from "url-metadata";
-
-import getUrls from "get-urls";
 
 export class ChannelsController {
     path = "/channels";

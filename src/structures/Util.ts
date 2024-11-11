@@ -63,3 +63,21 @@ export const dominantHex = async (url: string) => {
 
     return rgbHex(dominant.r, dominant.g, dominant.b);
 };
+
+export const getUrls = (text: string) => {
+    const urlPattern =
+        /(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/\S*)?/g;
+    const urls = text.match(urlPattern) || []; // Find all URLs or return an empty array if none
+
+    // Convert each URL to valid format (ensure it has https://)
+    const validUrls = urls.map((url) => {
+        // If the URL doesn't start with 'http' (or 'https'), add 'https://'
+        if (!/^https?:\/\//i.test(url)) {
+            url = "https://" + url;
+        }
+        return url;
+    });
+
+    // Remove duplicates using Set
+    return [...new Set(validUrls)];
+};
