@@ -1,6 +1,6 @@
 import { model, Schema, type InferSchemaType } from "mongoose";
 
-const inviteSchema = new Schema(
+const voiceStateSchema = new Schema(
     {
         _id: {
             type: String,
@@ -8,39 +8,47 @@ const inviteSchema = new Schema(
             unique: true,
             index: true
         },
-        code: {
-            type: String,
-            required: true
-        },
-        uses: {
-            type: Number,
-            default: 0
-        },
-        maxUses: {
-            type: Number,
-            default: 0
-        },
         server: {
             type: String,
-            ref: "servers",
-            required: true
+            ref: "servers"
         },
-        createdBy: {
+        channel: {
             type: String,
-            required: true,
-            ref: "users"
-        },
-        createdTimestamp: {
-            type: Number,
+            ref: "channels",
             required: true
         },
-        expiresAt: {
-            type: Date,
-            default: null
+        user: {
+            type: String,
+            ref: "users",
+            required: true
         },
-        expiresTimestamp: {
-            type: Number,
-            default: null
+        sessionID: {
+            type: String,
+            required: true
+        },
+        deaf: {
+            type: Boolean,
+            default: false
+        },
+        mute: {
+            type: Boolean,
+            default: false
+        },
+        selfDeaf: {
+            type: Boolean,
+            default: false
+        },
+        selfMute: {
+            type: Boolean,
+            default: false
+        },
+        selfStream: {
+            type: Boolean,
+            default: false
+        },
+        selfVideo: {
+            type: Boolean,
+            default: false
         }
     },
     {
@@ -73,10 +81,12 @@ const inviteSchema = new Schema(
     }
 );
 
-export type IInvite = InferSchemaType<typeof inviteSchema>;
+export type IVoiceState = InferSchemaType<typeof voiceStateSchema>;
 
-const inviteModel = model("invites", inviteSchema);
+const voiceStateModel = model("voicestates", voiceStateSchema);
 
-export type InviteDocument = ReturnType<(typeof inviteModel)["hydrate"]>;
+export type VoiceStateDocument = ReturnType<
+    (typeof voiceStateModel)["hydrate"]
+>;
 
-export default inviteModel;
+export default voiceStateModel;

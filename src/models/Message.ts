@@ -72,9 +72,8 @@ const messageSchema = new Schema(
         toObject: {
             virtuals: true,
             transform: function (_, ret) {
-                delete ret.password;
-                delete ret.privateKey;
-                delete ret.email;
+                delete ret._id;
+                delete ret.__v;
                 return ret;
             }
         }

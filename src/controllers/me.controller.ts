@@ -102,7 +102,7 @@ export class MeController {
                 mimetype
             );
 
-            const emoji = new emojiModel({
+            const emoji = await new emojiModel({
                 _id: genSnowflake(),
                 name,
                 shortCode: name.split(" ").join("_").toLowerCase(),
@@ -110,7 +110,7 @@ export class MeController {
                 url: emojiUrl.publicUrls[0],
                 createdAt: new Date(),
                 createdTimestamp: Date.now()
-            });
+            }).populate("createdBy");
 
             await emoji.save();
 

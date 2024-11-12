@@ -19,7 +19,12 @@ export class EmojiController {
         try {
             await checkIfLoggedIn(req);
 
-            const emojis = await emojiModel.find();
+            const emojis = await emojiModel
+                .find()
+                .populate(
+                    "createdBy",
+                    "id avatar defaultAvatar username displayName"
+                );
 
             res.json(emojis);
         } catch (error) {
