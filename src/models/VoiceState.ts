@@ -22,10 +22,6 @@ const voiceStateSchema = new Schema(
             ref: "users",
             required: true
         },
-        sessionID: {
-            type: String,
-            required: true
-        },
         deaf: {
             type: Boolean,
             default: false
