@@ -188,10 +188,11 @@ export class ServersController {
                     "Server not found"
                 );
 
-            if (server.members?.includes(user.id)) {
-                res.json(server);
-                return;
-            }
+            if (server.members?.includes(user.id))
+                throw new HttpException(
+                    HTTP_RESPONSE_CODE.BAD_REQUEST,
+                    "You are already a member of this server"
+                );
 
             if (invite.maxUses > 0 && invite.uses >= invite.maxUses)
                 throw new HttpException(
