@@ -32,6 +32,11 @@ const channelSchema = new Schema(
             ref: "channels",
             default: null
         },
+        voiceStates: {
+            type: [String],
+            ref: "voiceStates",
+            default: []
+        },
         type: {
             type: String,
             required: true

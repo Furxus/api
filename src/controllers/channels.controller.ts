@@ -11,6 +11,7 @@ import { io } from "../App";
 import dmChannelModel from "../models/DMChannel";
 
 import urlMetadata from "url-metadata";
+import isArray from "lodash/isArray";
 
 export class ChannelsController {
     path = "/channels";
@@ -542,7 +543,25 @@ export class ChannelsController {
                     "Unauthorized"
                 );
 
-            res.json(await channelModel.find({ server: server.id }));
+            const { populates } = req.params;
+
+            const channels = channelModel.find({ server: server.id });
+
+            if (populates) {
+                if (!isArray(populates))
+                    throw new HttpException(
+                        HTTP_RESPONSE_CODE.BAD_REQUEST,
+                        "Populates must be an array"
+                    );
+
+                for (const populate of populates) {
+                    channels.populate(populate);
+                }
+            }
+
+            const finalized = await channels;
+
+            res.json(finalized);
         } catch (err) {
             logger.error(err);
             next(err);

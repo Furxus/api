@@ -4,7 +4,5 @@ export class VoiceStatesController {
     path = "/voice-states";
     router = Router();
 
-    constructor() {
-
-    }
+    constructor() {}
 }
