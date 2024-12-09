@@ -33,7 +33,16 @@ const app = express();
 const http = createServer(app);
 const database = new Database();
 
-app.use(cors());
+app.use(
+    cors({
+        origin: [
+            "http://localhost:1420",
+            "https://admin.socket.io",
+            "https://furxus.com"
+        ],
+        credentials: true
+    })
+);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(

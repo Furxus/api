@@ -6,13 +6,14 @@ import type { RequestWithUser } from "@furxus/types";
 import { HttpException } from "../exceptions/HttpException";
 import { HTTP_RESPONSE_CODE } from "../Constants";
 import userModel from "../models/User";
+import crypto from "crypto";
 
 import sharp from "sharp";
 import rgbHex from "rgb-hex";
 
 export const genRandColor = () =>
     [...Array(6)]
-        .map(() => Math.floor(Math.random() * 16).toString(16))
+        .map(() => (crypto.randomBytes(1)[0] % 16).toString(16))
         .join("");
 
 export const imageToBuffer = async (url: string) =>
@@ -33,7 +34,7 @@ export const randInviteCode = () => {
     let code = "";
     for (let i = 0; i < 6; i++) {
         code += characters.charAt(
-            Math.floor(Math.random() * characters.length)
+            crypto.randomInt(characters.length)
         );
     }
 
@@ -65,8 +66,7 @@ export const dominantHex = async (url: string) => {
 };
 
 export const getUrls = (text: string) => {
-    const urlPattern =
-        /(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/\S*)?/g;
+    const urlPattern = /\bhttps?:\/\/[^\s/$.?#].[^\s]*\b/g;
     const urls = text.match(urlPattern) || []; // Find all URLs or return an empty array if none
 
     // Convert each URL to valid format (ensure it has https://)

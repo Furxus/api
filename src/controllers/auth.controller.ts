@@ -193,7 +193,7 @@ export class AuthController {
 
             // Choose a random default avatar for the user
             const randomSpecies =
-                species[Math.floor(Math.random() * species.length)];
+                species[crypto.randomInt(0, species.length)];
             const imageUrl = bucket.getObjectPublicUrls(
                 `defaultAvatar/${randomSpecies}.png`
             )[0];

@@ -3,7 +3,7 @@ import Joi from "joi";
 const pswdReqTxt =
     "Password must contain at least one uppercase letter, one lowercase letter, one number, one special character and must be atleast 6 characters long";
 
-const pswdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/;
+const pswdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.{8,})/;
 
 export const validateRegister = Joi.object({
     email: Joi.string()
