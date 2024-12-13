@@ -195,11 +195,13 @@ const userSchema = new Schema(
             type: Number,
             default: 0
         },
-
-        // TODO: Change this to beta after done being in alpha
-        type: {
+        system: {
+            type: Boolean,
+            default: false
+        },
+        flags: {
             type: [String],
-            default: ["user", "alpha_tester"]
+            default: []
         }
     },
     {

@@ -99,12 +99,12 @@ io.on("connection", (socket) => {
         socket.leave(serverId);
     });
 
-    socket.on("channel:join", (channelId: string) => {
-        logger.debug(`Channel joined: ${channelId}`);
+    socket.on("channel:focus", (channelId: string) => {
+        logger.debug(`Channel focused: ${channelId}`);
         socket.join(channelId);
     });
-    socket.on("channel:leave", (channelId: string) => {
-        logger.debug(`Channel left: ${channelId}`);
+    socket.on("channel:blur", (channelId: string) => {
+        logger.debug(`Channel blurred: ${channelId}`);
         socket.leave(channelId);
     });
 
